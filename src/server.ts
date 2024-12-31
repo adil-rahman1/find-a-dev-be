@@ -29,8 +29,10 @@ app.get("/developers", async (_req, res) => {
     const queryResult = await client.query(sqlQuery);
     res.status(200).json(queryResult.rows);
   } catch (error) {
-    console.error("Error running query:", error);
-    res.status(500).send("Database query error");
+    console.error("Error occurred while retrieving developers:", error);
+    res
+      .status(500)
+      .send("Internal server error. Could not retrieve developers.");
   }
 });
 
@@ -40,12 +42,21 @@ app.get("/developers/:id", async (req, res) => {
     const sqlQuery = "SELECT * FROM developers WHERE id = $1";
     const queryResult = await client.query(sqlQuery, [id]);
     if (queryResult.rows.length === 0) {
-      res.status(404).json({ error: "Developer not found" });
+      res
+        .status(404)
+        .json({ error: "Developer with the given ID does not exist" });
     }
     res.status(200).json(queryResult.rows[0]);
   } catch (error) {
-    console.error("Error running query:", error);
-    res.status(500).send("Database query error");
+    console.error(
+      "Error occurred while retrieving developer with given ID:",
+      error
+    );
+    res
+      .status(500)
+      .send(
+        "Internal server error. Could not retrieve developer information with given ID."
+      );
   }
 });
 
@@ -61,8 +72,10 @@ app.post("/developers", async (req, res) => {
     ]);
     res.status(201).json(queryResult.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Error creating developer" });
+    console.error("Error occurred while creating developer:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error. Could not create developer." });
   }
 });
 
@@ -94,25 +107,38 @@ app.patch("/developers/:id", async (req, res) => {
     const queryResult = await client.query(sqlQuery, queryValues);
     res.status(200).json(queryResult.rows[0]);
   } catch (error) {
-    console.error("Error running query:", error);
-    res.status(500).send("Error updating developer");
+    console.error(
+      "Error occurred while updating developer with given ID:",
+      error
+    );
+    res
+      .status(500)
+      .send(
+        "Internal server error. Could not update developer information with given ID."
+      );
   }
 });
 
 //Route handlers for /developers/:id/social-links
-
 app.get("/developers/:id/social-links", async (req, res) => {
   try {
     const id = req.params.id;
     const sqlQuery = "SELECT * FROM social_links WHERE developer_id = $1";
     const queryResult = await client.query(sqlQuery, [id]);
     if (queryResult.rows.length === 0) {
-      res.status(404).json({ error: "Developer's social links not found" });
+      res.status(404).json({ error: "Developer has no social links" });
     }
     res.status(200).json(queryResult.rows[0]);
   } catch (error) {
-    console.error("Error running query:", error);
-    res.status(500).send("Database query error");
+    console.error(
+      "Error occurred while retrieving developer's social links with given ID:",
+      error
+    );
+    res
+      .status(500)
+      .send(
+        "Internal server error. Could not retrieve developers social links with given ID."
+      );
   }
 });
 
@@ -155,8 +181,14 @@ app.post("/developers/:id/social-links", async (req, res) => {
     const queryResult = await client.query(sqlQuery, queryValues);
     res.status(201).json(queryResult.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Error creating social links" });
+    console.error(
+      "Error occurred while adding social links for developer with given ID",
+      error
+    );
+    res.status(500).json({
+      error:
+        "Internal server error. Could not add social links for developer with given ID.",
+    });
   }
 });
 
@@ -194,8 +226,32 @@ app.patch("/developers/:id/social-links", async (req, res) => {
     const queryResult = await client.query(sqlQuery, queryValues);
     res.status(200).json(queryResult.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Error updating social links" });
+    console.error(
+      "Error occurred while updating social links for developer with given ID",
+      error
+    );
+    res.status(500).json({
+      error:
+        "Internal server error. Could not update social links for developer with given ID.",
+    });
+  }
+});
+
+//Route handlers for /developers/:id/services
+
+app.get("/developers/:id/services", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const sqlQuery =
+      "SELECT developer_services.id, services.title FROM developer_services INNER JOIN services ON developer_services.service_id = services.id WHERE developer_services.developer_id = $1";
+    const queryResult = await client.query(sqlQuery, [id]);
+    if (queryResult.rows.length === 0) {
+      res.status(404).json({ error: "Developer has no services" });
+    }
+    res.status(200).json(queryResult.rows);
+  } catch (error) {
+    console.error("Error occurred while retrieving services:", error);
+    res.status(500).send("Internal server error. Could not retrieve services.");
   }
 });
 
