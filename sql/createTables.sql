@@ -47,6 +47,12 @@ CREATE TABLE social_links (
   	github TEXT,
 	  website TEXT,
 	  other TEXT
+		CONSTRAINT check_has_at_least_one_social_link CHECK (
+        linkedin IS NOT NULL OR 
+        github IS NOT NULL OR 
+        website IS NOT NULL OR 
+        other IS NOT NULL
+    )
 );
 
 DROP TABLE IF EXISTS services;
