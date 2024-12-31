@@ -53,7 +53,7 @@ DROP TABLE IF EXISTS services;
 
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
-  	service VARCHAR(100) UNIQUE NOT NULL
+  	title VARCHAR(100) UNIQUE NOT NULL
 );
 
 DROP TABLE IF EXISTS developer_services;
