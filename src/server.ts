@@ -15,13 +15,14 @@ app.use(morgan("tiny"));
 
 const port = process.env.PORT ?? 3000;
 
-// API info page`
+// API INFO PAGE
+
 app.get("/api", (_req, res) => {
   const pathToFile = filePath("../public/index.html");
   res.sendFile(pathToFile);
 });
 
-//Route handlers for /developers/
+// ROUTE HANDLERS FOR /developers/
 
 app.get("/developers", async (_req, res) => {
   try {
@@ -81,7 +82,7 @@ app.post("/developers", async (req, res) => {
 
 app.patch("/developers/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = req.params.id;
     const { name, profile_image, about_me } = req.body;
     const setClauses = [];
     const queryValues = [];
@@ -119,7 +120,8 @@ app.patch("/developers/:id", async (req, res) => {
   }
 });
 
-//Route handlers for /developers/:id/social-links
+// ROUTE HANDLERS FOR /developers/:id/social-links
+
 app.get("/developers/:id/social-links", async (req, res) => {
   try {
     const id = req.params.id;
@@ -237,7 +239,7 @@ app.patch("/developers/:id/social-links", async (req, res) => {
   }
 });
 
-//Route handlers for /developers/:id/services
+// ROUTE HANDLERS FOR /developers/:id/services
 
 app.get("/developers/:id/services", async (req, res) => {
   try {
@@ -252,6 +254,115 @@ app.get("/developers/:id/services", async (req, res) => {
   } catch (error) {
     console.error("Error occurred while retrieving services:", error);
     res.status(500).send("Internal server error. Could not retrieve services.");
+  }
+});
+
+// ROUTE HANDLERS FOR /businesses
+
+app.get("/businesses", async (_req, res) => {
+  try {
+    const sqlQuery = "SELECT * FROM businesses ORDER BY id";
+    const queryResult = await client.query(sqlQuery);
+    res.status(200).json(queryResult.rows);
+  } catch (error) {
+    console.error("Error occurred while retrieving businesses:", error);
+    res
+      .status(500)
+      .send("Internal server error. Could not retrieve businesses.");
+  }
+});
+
+app.get("/businesses/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const sqlQuery = "SELECT * FROM businesses WHERE id = $1";
+    const queryResult = await client.query(sqlQuery, [id]);
+    if (queryResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Business with ID = ${id} does not exist` });
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while retrieving business with ID = ${id}`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not retrieve business with ID = ${id}.`
+      );
+  }
+});
+
+app.post("/businesses", async (req, res) => {
+  try {
+    const { name, company_logo, industry, description } = req.body;
+    const sqlQuery =
+      "INSERT INTO businesses (name, company_logo, industry, description) values ($1, $2, $3, $4) returning *";
+    const queryResult = await client.query(sqlQuery, [
+      name,
+      company_logo,
+      industry,
+      description,
+    ]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error("Error occurred while creating business:", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error. Could not create business." });
+  }
+});
+
+app.patch("/businesses/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const { name, company_logo, industry, description } = req.body;
+    const setClauses = [];
+    const queryValues = [];
+
+    if (name) {
+      setClauses.push(`name = ($${setClauses.length + 1})`);
+      queryValues.push(name);
+    }
+    if (company_logo) {
+      setClauses.push(`company_logo = ($${setClauses.length + 1})`);
+      queryValues.push(company_logo);
+    }
+    if (industry) {
+      setClauses.push(`"industry" = ($${setClauses.length + 1})`);
+      queryValues.push(industry);
+    }
+
+    if (description) {
+      setClauses.push(`"description" = ($${setClauses.length + 1})`);
+      queryValues.push(description);
+    }
+
+    queryValues.push(id);
+
+    const sqlQuery = `UPDATE businesses SET ${setClauses.join(
+      ", "
+    )} WHERE id = ($${queryValues.length}) returning *`;
+    const queryResult = await client.query(sqlQuery, queryValues);
+    if (queryResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Business with ID = ${id} does not exist` });
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while updating business with ID = ${id}:`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not update business information with ID = ${id}.`
+      );
   }
 });
 
