@@ -42,18 +42,18 @@ DROP TABLE IF EXISTS social_links;
 
 CREATE TABLE social_links (
     id SERIAL PRIMARY KEY,
-  	developer_id INT NOT NULL REFERENCES developers(id) on DELETE CASCADE,
-  	linkedin TEXT NOT NULL,
-  	github TEXT NOT NULL,
-	  website TEXT NOT NULL,
-	  other TEXT NOT NULL
+  	developer_id INT UNIQUE NOT NULL REFERENCES developers(id) on DELETE CASCADE,
+  	linkedin TEXT,
+  	github TEXT,
+	  website TEXT,
+	  other TEXT
 );
 
 DROP TABLE IF EXISTS services;
 
 CREATE TABLE services (
     id SERIAL PRIMARY KEY,
-  	service VARCHAR(100) NOT NULL
+  	service VARCHAR(100) UNIQUE NOT NULL
 );
 
 DROP TABLE IF EXISTS developer_services;
