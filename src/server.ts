@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import client from "./db";
-import filePath from "./filePath";
 
 dotenv.config();
 
@@ -14,13 +13,6 @@ app.use(cors());
 app.use(morgan("tiny"));
 
 const port = process.env.PORT ?? 3000;
-
-// API INFO PAGE
-
-app.get("/api", (_req, res) => {
-  const pathToFile = filePath("../public/index.html");
-  res.sendFile(pathToFile);
-});
 
 // ROUTE HANDLERS FOR /developers/
 
