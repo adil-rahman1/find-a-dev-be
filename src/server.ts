@@ -405,6 +405,109 @@ app.patch("/businesses/:id", async (req, res) => {
   }
 });
 
+app.get("/developers/:id/testimonials", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
+    const sqlQuery =
+      "SELECT testimonials.developer_id, businesses.name, testimonials.rating, testimonials.feedback FROM testimonials INNER JOIN businesses ON testimonials.testimonial_owner = businesses.id WHERE testimonials.developer_id = $1";
+    const queryResult = await client.query(sqlQuery, [id]);
+    if (queryResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} has no testimonials` });
+      return;
+    }
+    res.status(200).json(queryResult.rows);
+  } catch (error) {
+    console.error(
+      `Error occurred while retrieving testimonials for developer with ID = ${id} ->`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not retrieve testimonials for developer with ID = ${id}.`
+      );
+  }
+});
+
+app.post("/developers/:id/testimonials", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const { testimonial_owner, rating, feedback } = req.body;
+
+    const sqlQuery = `INSERT INTO testimonials (developer_id, testimonial_owner, rating, feedback) values ($1, $2, $3, $4) returning *`;
+    const queryResult = await client.query(sqlQuery, [
+      id,
+      testimonial_owner,
+      rating,
+      feedback,
+    ]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while adding a testimonial for developer with ID = ${id} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not add a testimonial for developer with ID = ${id}.`,
+    });
+  }
+});
+
+app.patch("/developers/:id/testimonials", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const { testimonial_owner, rating, feedback } = req.body;
+    const setClauses = [];
+    const queryValues = [id, testimonial_owner];
+
+    if (rating) {
+      setClauses.push(`rating = $${queryValues.length + 1}`);
+      queryValues.push(rating);
+    }
+
+    if (feedback) {
+      setClauses.push(`feedback = $${queryValues.length + 1}`);
+      queryValues.push(feedback);
+    }
+
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
+    const sqlQuery = `UPDATE testimonials SET ${setClauses.join(", ")} WHERE developer_id = $1 AND testimonial_owner = $2 returning *`;
+    const queryResult = await client.query(sqlQuery, queryValues);
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while updating testimonial for developer with ID = ${id} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not update testimonial for developer with ID = ${id}.`,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at port ${port}`);
 });
