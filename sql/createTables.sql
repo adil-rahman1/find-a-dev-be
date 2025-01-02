@@ -24,8 +24,8 @@ CREATE TABLE business_projects (
     project_owner INT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     title VARCHAR(100) NOT NULL,
     brief TEXT NOT NULL,
-    desired_expertise VARCHAR(100),
-    deadline DATE NOT NULL,
+    desired_skill VARCHAR(100),
+    deadline DATE,
     status VARCHAR NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled'))
 );
 
