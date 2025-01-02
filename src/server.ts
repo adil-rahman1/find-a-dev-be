@@ -405,6 +405,8 @@ app.patch("/businesses/:id", async (req, res) => {
   }
 });
 
+// ROUTE HANDLERS FOR /developers/:id/testimonials
+
 app.get("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
   try {
@@ -504,6 +506,109 @@ app.patch("/developers/:id/testimonials", async (req, res) => {
     );
     res.status(500).json({
       error: `Internal server error. Could not update testimonial for developer with ID = ${id}.`,
+    });
+  }
+});
+
+// ROUTE HANDLERS FOR /business-projects
+
+app.get("/business-projects", async (_req, res) => {
+  try {
+    const sqlQuery = "SELECT * FROM business_projects ORDER BY id";
+    const queryResult = await client.query(sqlQuery);
+    res.status(200).json(queryResult.rows);
+  } catch (error) {
+    console.error(
+      "Error occurred while retrieving business projects ->",
+      error
+    );
+    res
+      .status(500)
+      .send("Internal server error. Could not retrieve business projects.");
+  }
+});
+
+app.post("/business-projects", async (req, res) => {
+  try {
+    const { project_owner, title, brief, desired_skill, status, deadline } =
+      req.body;
+    const sqlQuery = `INSERT INTO business_projects (project_owner, title, brief, desired_skill, deadline, status) values ($1, $2, $3, $4, $5, $6) returning *`;
+    const queryResult = await client.query(sqlQuery, [
+      project_owner,
+      title,
+      brief,
+      desired_skill,
+      deadline,
+      status,
+    ]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error("Error occurred while creating business project ->", error);
+    res.status(500).json({
+      error: "Internal server error. Could not create business project.",
+    });
+  }
+});
+
+app.patch("/business-projects/:projectId", async (req, res) => {
+  const projectId = req.params.projectId;
+  const { projectOwner, title, brief, desired_skil, status, deadline } =
+    req.body;
+  try {
+    const setClauses = [];
+    const queryValues = [projectId];
+
+    if (projectOwner) {
+      setClauses.push(`project_owner = $${queryValues.length + 1}`);
+      queryValues.push(projectOwner);
+    }
+
+    if (title) {
+      setClauses.push(`title = $${queryValues.length + 1}`);
+      queryValues.push(title);
+    }
+
+    if (brief) {
+      setClauses.push(`brief = $${queryValues.length + 1}`);
+      queryValues.push(brief);
+    }
+
+    if (desired_skil) {
+      setClauses.push(`desired_skil = $${queryValues.length + 1}`);
+      queryValues.push(desired_skil);
+    }
+
+    if (status) {
+      setClauses.push(`status = $${queryValues.length + 1}`);
+      queryValues.push(status);
+    }
+
+    if (deadline) {
+      setClauses.push(`deadline = $${queryValues.length + 1}`);
+      queryValues.push(deadline);
+    }
+
+    const businessResult = await client.query(
+      "SELECT * FROM businesses WHERE id = $1",
+      [projectOwner]
+    );
+    if (businessResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Business with ID = ${projectOwner} does not exist` });
+      return;
+    }
+
+    const sqlQuery = `UPDATE business_projects SET ${setClauses.join(", ")} WHERE id = $1 returning *`;
+    const queryResult = await client.query(sqlQuery, queryValues);
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while updating project for business with ID = ${projectOwner} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not update project for business with project_owner = ${projectOwner}.`,
     });
   }
 });
