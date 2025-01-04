@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS business_projects;
 
 CREATE TABLE business_projects (
     id SERIAL PRIMARY KEY,
+    assigned_to INT REFERENCES developers(id) ON DELETE CASCADE,
     project_owner INT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
     title VARCHAR(100) NOT NULL,
     brief TEXT NOT NULL,
