@@ -613,6 +613,69 @@ app.patch("/business-projects/:projectId", async (req, res) => {
   }
 });
 
+// ROUTE HANDLERS FOR /project-applications
+
+app.get("/project-applications", async (_req, res) => {
+  try {
+    const sqlQuery = "SELECT * FROM project_applications ORDER BY id";
+    const queryResult = await client.query(sqlQuery);
+    res.status(200).json(queryResult.rows);
+  } catch (error) {
+    console.error(
+      "Error occurred while retrieving project applications ->",
+      error
+    );
+    res
+      .status(500)
+      .send("Internal server error. Could not retrieve project applications.");
+  }
+});
+
+app.post("/project-applications", async (req, res) => {
+  try {
+    const { developerId, projectId, status } = req.body;
+    const sqlQuery =
+      "INSERT INTO project_applications (developer_id, project_id, status) values ($1, $2, $3) returning *";
+    const queryResult = await client.query(sqlQuery, [
+      developerId,
+      projectId,
+      status,
+    ]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error("Error occurred while creating application ->", error);
+    res
+      .status(500)
+      .json({ error: "Internal server error. Could not create application." });
+  }
+});
+
+app.patch("/project-applications/:id", async (req, res) => {
+  const applicationId = req.params.id;
+  const status = req.body.status;
+  try {
+    const sqlQuery = `UPDATE project_applications SET status = $1 WHERE id = $2 returning *`;
+    const queryResult = await client.query(sqlQuery, [status, applicationId]);
+    if (queryResult.rows.length === 0) {
+      res.status(404).json({
+        error: `Application with ID = ${applicationId} does not exist`,
+      });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while updating application with ID = ${applicationId} ->`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not update application with ID = ${applicationId}.`
+      );
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at port ${port}`);
 });
