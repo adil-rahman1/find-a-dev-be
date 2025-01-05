@@ -14,8 +14,6 @@ app.use(morgan("tiny"));
 
 const port = process.env.PORT ?? 3000;
 
-// ROUTE HANDLERS FOR /developers/
-
 app.get("/developers", async (_req, res) => {
   try {
     const sqlQuery = "SELECT * FROM developers ORDER BY id";
@@ -56,13 +54,13 @@ app.get("/developers/:id", async (req, res) => {
 
 app.post("/developers", async (req, res) => {
   try {
-    const { name, profile_image, about_me } = req.body;
+    const { name, profileImage, aboutMe } = req.body;
     const sqlQuery =
       "INSERT INTO developers (name, profile_image, about_me) values ($1, $2, $3) returning *";
     const queryResult = await client.query(sqlQuery, [
       name,
-      profile_image,
-      about_me,
+      profileImage,
+      aboutMe,
     ]);
     res.status(201).json(queryResult.rows[0]);
   } catch (error) {
@@ -76,7 +74,7 @@ app.post("/developers", async (req, res) => {
 app.patch("/developers/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const { name, profile_image, about_me } = req.body;
+    const { name, profileImage, aboutMe } = req.body;
     const setClauses = [];
     const queryValues = [];
 
@@ -84,13 +82,13 @@ app.patch("/developers/:id", async (req, res) => {
       setClauses.push(`name = ($${setClauses.length + 1})`);
       queryValues.push(name);
     }
-    if (profile_image) {
+    if (profileImage) {
       setClauses.push(`profile_image = ($${setClauses.length + 1})`);
-      queryValues.push(profile_image);
+      queryValues.push(profileImage);
     }
-    if (about_me) {
+    if (aboutMe) {
       setClauses.push(`"about_me" = ($${setClauses.length + 1})`);
-      queryValues.push(about_me);
+      queryValues.push(aboutMe);
     }
 
     queryValues.push(id);
@@ -118,8 +116,6 @@ app.patch("/developers/:id", async (req, res) => {
       );
   }
 });
-
-// ROUTE HANDLERS FOR /developers/:id/social-links
 
 app.get("/developers/:id/social-links", async (req, res) => {
   const id = req.params.id;
@@ -255,9 +251,7 @@ app.patch("/developers/:id/social-links", async (req, res) => {
   }
 });
 
-// ROUTE HANDLERS FOR /developers/:id/services
-
-app.get("/developers/:id/services", async (req, res) => {
+app.get("/developers/:id/skills", async (req, res) => {
   const id = req.params.id;
   try {
     const developerResult = await client.query(
@@ -272,29 +266,27 @@ app.get("/developers/:id/services", async (req, res) => {
     }
 
     const sqlQuery =
-      "SELECT developer_services.id, services.title FROM developer_services INNER JOIN services ON developer_services.service_id = services.id WHERE developer_services.developer_id = $1";
+      "SELECT developer_skills.id, skills.name FROM developer_skills INNER JOIN skills ON developer_skills.skill_id = skills.id WHERE developer_skills.developer_id = $1";
     const queryResult = await client.query(sqlQuery, [id]);
     if (queryResult.rows.length === 0) {
       res
         .status(404)
-        .json({ error: `Developer with ID = ${id} has no services` });
+        .json({ error: `Developer with ID = ${id} has no skills` });
       return;
     }
     res.status(200).json(queryResult.rows);
   } catch (error) {
     console.error(
-      `Error occurred while retrieving services for developer with ID = ${id} ->`,
+      `Error occurred while retrieving skills for developer with ID = ${id} ->`,
       error
     );
     res
       .status(500)
       .send(
-        `Internal server error. Could not retrieve services for developer with ID = ${id}.`
+        `Internal server error. Could not retrieve skills for developer with ID = ${id}.`
       );
   }
 });
-
-// ROUTE HANDLERS FOR /businesses
 
 app.get("/businesses", async (_req, res) => {
   try {
@@ -336,12 +328,12 @@ app.get("/businesses/:id", async (req, res) => {
 
 app.post("/businesses", async (req, res) => {
   try {
-    const { name, company_logo, industry, description } = req.body;
+    const { name, companyLogo, industry, description } = req.body;
     const sqlQuery =
       "INSERT INTO businesses (name, company_logo, industry, description) values ($1, $2, $3, $4) returning *";
     const queryResult = await client.query(sqlQuery, [
       name,
-      company_logo,
+      companyLogo,
       industry,
       description,
     ]);
@@ -357,7 +349,7 @@ app.post("/businesses", async (req, res) => {
 app.patch("/businesses/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const { name, company_logo, industry, description } = req.body;
+    const { name, companyLogo, industry, description } = req.body;
     const setClauses = [];
     const queryValues = [];
 
@@ -365,9 +357,9 @@ app.patch("/businesses/:id", async (req, res) => {
       setClauses.push(`name = ($${setClauses.length + 1})`);
       queryValues.push(name);
     }
-    if (company_logo) {
+    if (companyLogo) {
       setClauses.push(`company_logo = ($${setClauses.length + 1})`);
-      queryValues.push(company_logo);
+      queryValues.push(companyLogo);
     }
     if (industry) {
       setClauses.push(`"industry" = ($${setClauses.length + 1})`);
@@ -404,8 +396,6 @@ app.patch("/businesses/:id", async (req, res) => {
       );
   }
 });
-
-// ROUTE HANDLERS FOR /developers/:id/testimonials
 
 app.get("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
@@ -447,12 +437,12 @@ app.get("/developers/:id/testimonials", async (req, res) => {
 app.post("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
   try {
-    const { testimonial_owner, rating, feedback } = req.body;
+    const { testimonialOwner, rating, feedback } = req.body;
 
     const sqlQuery = `INSERT INTO testimonials (developer_id, testimonial_owner, rating, feedback) values ($1, $2, $3, $4) returning *`;
     const queryResult = await client.query(sqlQuery, [
       id,
-      testimonial_owner,
+      testimonialOwner,
       rating,
       feedback,
     ]);
@@ -471,9 +461,9 @@ app.post("/developers/:id/testimonials", async (req, res) => {
 app.patch("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
   try {
-    const { testimonial_owner, rating, feedback } = req.body;
+    const { testimonialOwner, rating, feedback } = req.body;
     const setClauses = [];
-    const queryValues = [id, testimonial_owner];
+    const queryValues = [id, testimonialOwner];
 
     if (rating) {
       setClauses.push(`rating = $${queryValues.length + 1}`);
@@ -510,8 +500,6 @@ app.patch("/developers/:id/testimonials", async (req, res) => {
   }
 });
 
-// ROUTE HANDLERS FOR /business-projects
-
 app.get("/business-projects", async (_req, res) => {
   try {
     const sqlQuery = "SELECT * FROM business_projects ORDER BY id";
@@ -530,14 +518,14 @@ app.get("/business-projects", async (_req, res) => {
 
 app.post("/business-projects", async (req, res) => {
   try {
-    const { project_owner, title, brief, desired_skill, status, deadline } =
+    const { projectOwner, title, brief, desiredSkill, status, deadline } =
       req.body;
     const sqlQuery = `INSERT INTO business_projects (project_owner, title, brief, desired_skill, deadline, status) values ($1, $2, $3, $4, $5, $6) returning *`;
     const queryResult = await client.query(sqlQuery, [
-      project_owner,
+      projectOwner,
       title,
       brief,
-      desired_skill,
+      desiredSkill,
       deadline,
       status,
     ]);
@@ -550,9 +538,9 @@ app.post("/business-projects", async (req, res) => {
   }
 });
 
-app.patch("/business-projects/:projectId", async (req, res) => {
-  const projectId = req.params.projectId;
-  const { projectOwner, title, brief, desired_skil, status, deadline } =
+app.patch("/business-projects/:id", async (req, res) => {
+  const projectId = req.params.id;
+  const { projectOwner, title, brief, desiredSkill, status, deadline } =
     req.body;
   try {
     const setClauses = [];
@@ -573,9 +561,9 @@ app.patch("/business-projects/:projectId", async (req, res) => {
       queryValues.push(brief);
     }
 
-    if (desired_skil) {
-      setClauses.push(`desired_skil = $${queryValues.length + 1}`);
-      queryValues.push(desired_skil);
+    if (desiredSkill) {
+      setClauses.push(`desired_skill = $${queryValues.length + 1}`);
+      queryValues.push(desiredSkill);
     }
 
     if (status) {
@@ -612,8 +600,6 @@ app.patch("/business-projects/:projectId", async (req, res) => {
     });
   }
 });
-
-// ROUTE HANDLERS FOR /project-applications
 
 app.get("/project-applications", async (_req, res) => {
   try {
