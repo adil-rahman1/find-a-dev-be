@@ -11,10 +11,17 @@ DROP TABLE IF EXISTS businesses;
 
 CREATE TABLE businesses (
     id SERIAL PRIMARY KEY,
-  	name VARCHAR(100) NOT NULL,
+  	name VARCHAR(255) NOT NULL,
 	  company_logo TEXT NOT NULL,
   	industry VARCHAR(100) NOT NULL,
     description TEXT NOT NULL
+);
+
+DROP TABLE IF EXISTS skills;
+
+CREATE TABLE skills (
+    id SERIAL PRIMARY KEY,
+  	name VARCHAR(100) UNIQUE NOT NULL
 );
 
 DROP TABLE IF EXISTS business_projects;
@@ -23,9 +30,9 @@ CREATE TABLE business_projects (
     id SERIAL PRIMARY KEY,
     assigned_to INT REFERENCES developers(id) ON DELETE CASCADE,
     project_owner INT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-    title VARCHAR(100) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     brief TEXT NOT NULL,
-    desired_skill VARCHAR(100),
+    desired_skill VARCHAR(100) REFERENCES skills(name),
     deadline DATE,
     status VARCHAR NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled'))
 );
@@ -56,30 +63,30 @@ CREATE TABLE social_links (
     )
 );
 
-DROP TABLE IF EXISTS services;
+DROP TABLE IF EXISTS developer_skills;
 
-CREATE TABLE services (
-    id SERIAL PRIMARY KEY,
-  	title VARCHAR(100) UNIQUE NOT NULL
-);
-
-DROP TABLE IF EXISTS developer_services;
-
-CREATE TABLE developer_services (
+CREATE TABLE developer_skills (
     id SERIAL PRIMARY KEY,
   	developer_id INT NOT NULL REFERENCES developers(id) on DELETE CASCADE,
-	  service_id INT NOT NULL REFERENCES services(id) on DELETE CASCADE
+	  skill_id INT NOT NULL REFERENCES skills(id) on DELETE CASCADE
 );
 
-DROP TABLE IF EXISTS portfolio_projects;
+DROP TABLE IF EXISTS developer_projects;
 
-CREATE TABLE portfolio_projects (
+CREATE TABLE developer_projects (
     id SERIAL PRIMARY KEY,
   	project_owner INT NOT NULL REFERENCES developers(id) on DELETE CASCADE,
   	image TEXT NOT NULL,
-  	title VARCHAR(100) NOT NULL,
-  	description TEXT NOT NULL,
-  	services TEXT NOT NULL
+  	title VARCHAR(255) NOT NULL,
+  	description TEXT NOT NULL
+);
+
+DROP TABLE IF EXISTS project_skills;
+
+CREATE TABLE project_skills (
+    id SERIAL PRIMARY KEY,
+  	skill_name VARCHAR(100) NOT NULL REFERENCES skills(name) on DELETE CASCADE,
+    project_id INT NOT NULL REFERENCES developer_projects(id) on DELETE CASCADE
 );
 
 DROP TABLE IF EXISTS testimonials;
