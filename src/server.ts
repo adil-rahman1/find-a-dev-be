@@ -266,7 +266,7 @@ app.get("/developers/:id/skills", async (req, res) => {
     }
 
     const sqlQuery =
-      "SELECT developer_skills.id, skills.name FROM developer_skills INNER JOIN skills ON developer_skills.skill_id = skills.id WHERE developer_skills.developer_id = $1";
+      "SELECT ds.developer_id, string_agg(s.name, ', ') as skills FROM skills s JOIN developer_skills ds ON ds.skill_id = s.id WHERE ds.developer_id = $1 GROUP BY ds.developer_id;";
     const queryResult = await client.query(sqlQuery, [id]);
     if (queryResult.rows.length === 0) {
       res
@@ -274,7 +274,7 @@ app.get("/developers/:id/skills", async (req, res) => {
         .json({ error: `Developer with ID = ${id} has no skills` });
       return;
     }
-    res.status(200).json(queryResult.rows);
+    res.status(200).json(queryResult.rows[0]);
   } catch (error) {
     console.error(
       `Error occurred while retrieving skills for developer with ID = ${id} ->`,
