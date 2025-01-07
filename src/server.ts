@@ -436,8 +436,29 @@ app.get("/developers/:id/testimonials", async (req, res) => {
 
 app.post("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
+  const { testimonialOwner, rating, feedback } = req.body;
   try {
-    const { testimonialOwner, rating, feedback } = req.body;
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
+    const businessResult = await client.query(
+      "SELECT * FROM businesses WHERE id = $1",
+      [testimonialOwner]
+    );
+    if (businessResult.rows.length === 0) {
+      res.status(404).json({
+        error: `Business with ID = ${testimonialOwner} does not exist`,
+      });
+      return;
+    }
 
     const sqlQuery = `INSERT INTO testimonials (developer_id, testimonial_owner, rating, feedback) values ($1, $2, $3, $4) returning *`;
     const queryResult = await client.query(sqlQuery, [
@@ -460,8 +481,31 @@ app.post("/developers/:id/testimonials", async (req, res) => {
 
 app.patch("/developers/:id/testimonials", async (req, res) => {
   const id = req.params.id;
+  const { testimonialOwner, rating, feedback } = req.body;
+
   try {
-    const { testimonialOwner, rating, feedback } = req.body;
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
+    const businessResult = await client.query(
+      "SELECT * FROM businesses WHERE id = $1",
+      [testimonialOwner]
+    );
+    if (businessResult.rows.length === 0) {
+      res.status(404).json({
+        error: `Business with ID = ${testimonialOwner} does not exist`,
+      });
+      return;
+    }
+
     const setClauses = [];
     const queryValues = [id, testimonialOwner];
 
@@ -473,17 +517,6 @@ app.patch("/developers/:id/testimonials", async (req, res) => {
     if (feedback) {
       setClauses.push(`feedback = $${queryValues.length + 1}`);
       queryValues.push(feedback);
-    }
-
-    const developerResult = await client.query(
-      "SELECT * FROM developers WHERE id = $1",
-      [id]
-    );
-    if (developerResult.rows.length === 0) {
-      res
-        .status(404)
-        .json({ error: `Developer with ID = ${id} does not exist` });
-      return;
     }
 
     const sqlQuery = `UPDATE testimonials SET ${setClauses.join(", ")} WHERE developer_id = $1 AND testimonial_owner = $2 returning *`;
