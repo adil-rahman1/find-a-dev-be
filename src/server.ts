@@ -695,6 +695,134 @@ app.patch("/project-applications/:id", async (req, res) => {
   }
 });
 
+app.get("/developers/:id/projects", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
+    const sqlQuery =
+      "SELECT dp.id, dp.project_owner, dp.image, dp.title, dp.description, string_agg(ps.skill_name, ', ') as skills FROM developer_projects dp JOIN project_skills ps ON dp.id = ps.project_id WHERE dp.project_owner = $1 GROUP BY 1, 2, 3, 4, 5;";
+    const queryResult = await client.query(sqlQuery, [id]);
+    if (queryResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} has no projects` });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while retrieving projects for developer with ID = ${id} ->`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not retrieve projects for developer with ID = ${id}.`
+      );
+  }
+});
+
+app.post("/developers/:id/projects", async (req, res) => {
+  const id = req.params.id;
+  const { image, title, description } = req.body;
+  try {
+    const sqlQuery =
+      "INSERT INTO developer_projects (project_owner, image, title, description) values ($1, $2, $3, $4) returning *";
+    const queryResult = await client.query(sqlQuery, [
+      id,
+      image,
+      title,
+      description,
+    ]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while creating project for developer with ID = ${id} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not create project for developer with ID = ${id}.`,
+    });
+  }
+});
+
+app.patch("/developers/:devId/projects/:projectId", async (req, res) => {
+  const devId = req.params.devId;
+  const projectId = req.params.projectId;
+  const { image, title, description } = req.body;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [devId]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${devId} does not exist` });
+      return;
+    }
+
+    const projectResult = await client.query(
+      "SELECT * FROM developer_projects WHERE id = $1",
+      [projectId]
+    );
+    if (projectResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Project with ID = ${projectId} does not exist` });
+      return;
+    }
+
+    const setClauses = [];
+    const queryValues = [projectId];
+
+    if (image) {
+      setClauses.push(`image = $${queryValues.length + 1}`);
+      queryValues.push(image);
+    }
+
+    if (title) {
+      setClauses.push(`title = $${queryValues.length + 1}`);
+      queryValues.push(title);
+    }
+
+    if (description) {
+      setClauses.push(`description = $${queryValues.length + 1}`);
+      queryValues.push(description);
+    }
+
+    const sqlQuery = `UPDATE developer_projects SET ${setClauses.join(", ")} WHERE id = $1 returning *`;
+    const queryResult = await client.query(sqlQuery, queryValues);
+    if (queryResult.rows.length === 0) {
+      res.status(404).json({
+        error: `Project with ID = ${projectId} does not exist`,
+      });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while updating application with ID = ${projectId} ->`,
+      error
+    );
+    res
+      .status(500)
+      .send(
+        `Internal server error. Could not update project with ID = ${projectId}.`
+      );
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at port ${port}`);
 });
