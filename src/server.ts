@@ -202,6 +202,17 @@ app.post("/developers/:id/social-links", async (req, res) => {
 app.patch("/developers/:id/social-links", async (req, res) => {
   const id = req.params.id;
   try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [id]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${id} does not exist` });
+      return;
+    }
+
     const { linkedin, github, website, other } = req.body;
     const setClauses = [];
     const queryValues = [id];
@@ -224,17 +235,6 @@ app.patch("/developers/:id/social-links", async (req, res) => {
     if (other) {
       setClauses.push(`other = $${queryValues.length + 1}`);
       queryValues.push(other);
-    }
-
-    const developerResult = await client.query(
-      "SELECT * FROM developers WHERE id = $1",
-      [id]
-    );
-    if (developerResult.rows.length === 0) {
-      res
-        .status(404)
-        .json({ error: `Developer with ID = ${id} does not exist` });
-      return;
     }
 
     const sqlQuery = `UPDATE social_links SET ${setClauses.join(", ")} WHERE developer_id = $1 returning *`;
@@ -576,6 +576,17 @@ app.patch("/business-projects/:id", async (req, res) => {
   const { projectOwner, title, brief, desiredSkill, status, deadline } =
     req.body;
   try {
+    const businessResult = await client.query(
+      "SELECT * FROM businesses WHERE id = $1",
+      [projectOwner]
+    );
+    if (businessResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Business with ID = ${projectOwner} does not exist` });
+      return;
+    }
+
     const setClauses = [];
     const queryValues = [projectId];
 
@@ -607,17 +618,6 @@ app.patch("/business-projects/:id", async (req, res) => {
     if (deadline) {
       setClauses.push(`deadline = $${queryValues.length + 1}`);
       queryValues.push(deadline);
-    }
-
-    const businessResult = await client.query(
-      "SELECT * FROM businesses WHERE id = $1",
-      [projectOwner]
-    );
-    if (businessResult.rows.length === 0) {
-      res
-        .status(404)
-        .json({ error: `Business with ID = ${projectOwner} does not exist` });
-      return;
     }
 
     const sqlQuery = `UPDATE business_projects SET ${setClauses.join(", ")} WHERE id = $1 returning *`;
