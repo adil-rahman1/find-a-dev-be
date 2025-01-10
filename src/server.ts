@@ -823,6 +823,45 @@ app.patch("/developers/:devId/projects/:projectId", async (req, res) => {
   }
 });
 
+app.post("/project-skills", async (req, res) => {
+  const { skillName, projectId } = req.body;
+  try {
+    const sqlQuery = `INSERT INTO project_skills (skill_name, project_id) values ($1, $2) returning *`;
+    const queryResult = await client.query(sqlQuery, [skillName, projectId]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while adding a skill for project with ID = ${projectId} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not add a skill for project with ID = ${projectId}.`,
+    });
+  }
+});
+
+app.delete("/project-skills/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const sqlQuery = `DELETE FROM project_skills WHERE id = $1 returning *`;
+    const queryResult = await client.query(sqlQuery, [id]);
+
+    if (queryResult.rowCount === 0) {
+      res.status(404).json({ error: "Project skill not found." });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while delete a project skill with ID = ${id} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not delete project skill with ID = ${id}.`,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at port ${port}`);
 });
