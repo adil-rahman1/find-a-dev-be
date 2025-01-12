@@ -288,6 +288,88 @@ app.get("/developers/:id/skills", async (req, res) => {
   }
 });
 
+app.post("/developers/:id/skills", async (req, res) => {
+  const devId = req.params.id;
+  const { skillId } = req.body;
+
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [devId]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${devId} does not exist` });
+      return;
+    }
+    const skillResult = await client.query(
+      "SELECT * FROM skills WHERE id = $1",
+      [skillId]
+    );
+    if (skillResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Skill with ID = ${skillId} does not exist` });
+      return;
+    }
+
+    const sqlQuery =
+      "INSERT INTO developer_skills (developer_id, skill_id) values ($1, $2) returning *";
+    const queryResult = await client.query(sqlQuery, [devId, skillId]);
+    res.status(201).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while creating skill for developer with ID = ${devId} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not create skill for developer with ID = ${devId}.`,
+    });
+  }
+});
+
+app.delete("/developers/:id/skills", async (req, res) => {
+  const devId = req.params.id;
+  const { skillId } = req.body;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [devId]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${devId} does not exist` });
+      return;
+    }
+    const skillResult = await client.query(
+      "SELECT * FROM skills WHERE id = $1",
+      [skillId]
+    );
+    if (skillResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Skill with ID = ${skillId} does not exist` });
+      return;
+    }
+
+    const sqlQuery = `DELETE FROM developer_skills WHERE developer_id = $1 AND skill_id = $2 returning *`;
+    const queryResult = await client.query(sqlQuery, [devId, skillId]);
+
+    if (queryResult.rowCount === 0) {
+      res.status(404).json({ error: "Developer's skill not found." });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(`Error occurred while deleting developer's skill->`, error);
+    res.status(500).json({
+      error: `Internal server error. Could not delete developer's skill.`,
+    });
+  }
+});
+
 app.get("/businesses", async (_req, res) => {
   try {
     const sqlQuery = "SELECT * FROM businesses ORDER BY id";
@@ -853,7 +935,7 @@ app.delete("/project-skills/:id", async (req, res) => {
     res.status(200).json(queryResult.rows[0]);
   } catch (error) {
     console.error(
-      `Error occurred while delete a project skill with ID = ${id} ->`,
+      `Error occurred while deleting a project skill with ID = ${id} ->`,
       error
     );
     res.status(500).json({
