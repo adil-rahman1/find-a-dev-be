@@ -615,6 +615,52 @@ app.patch("/developers/:id/testimonials", async (req, res) => {
   }
 });
 
+app.delete("/developers/:id/testimonials", async (req, res) => {
+  const devId = req.params.id;
+  const { testimonialOwner } = req.body;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [devId]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${devId} does not exist` });
+      return;
+    }
+    const businessResult = await client.query(
+      "SELECT * FROM businesses WHERE id = $1",
+      [testimonialOwner]
+    );
+    if (businessResult.rows.length === 0) {
+      res.status(404).json({
+        error: `Business with ID = ${testimonialOwner} does not exist`,
+      });
+      return;
+    }
+
+    const sqlQuery = `DELETE FROM testimonials WHERE developer_id = $1 AND testimonial_owner = $2 returning *`;
+    const queryResult = await client.query(sqlQuery, [devId, testimonialOwner]);
+
+    if (queryResult.rowCount === 0) {
+      res.status(404).json({
+        error: `Developer's testimonial not found from business with ID = ${testimonialOwner}.`,
+      });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while deleting developer's testimonial->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not delete developer's testimonial.`,
+    });
+  }
+});
+
 app.get("/business-projects", async (_req, res) => {
   try {
     const sqlQuery = "SELECT * FROM business_projects ORDER BY id";
