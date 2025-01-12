@@ -973,6 +973,36 @@ app.patch("/developers/:devId/projects/:projectId", async (req, res) => {
   }
 });
 
+app.delete("/developers/:devId/projects/:projectId", async (req, res) => {
+  const { devId, projectId } = req.params;
+  try {
+    const developerResult = await client.query(
+      "SELECT * FROM developers WHERE id = $1",
+      [devId]
+    );
+    if (developerResult.rows.length === 0) {
+      res
+        .status(404)
+        .json({ error: `Developer with ID = ${devId} does not exist` });
+      return;
+    }
+
+    const sqlQuery = `DELETE FROM developer_projects WHERE id = $1 returning *`;
+    const queryResult = await client.query(sqlQuery, [projectId]);
+
+    if (queryResult.rowCount === 0) {
+      res.status(404).json({ error: "Developer's project not found." });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(`Error occurred while deleting developer's project->`, error);
+    res.status(500).json({
+      error: `Internal server error. Could not delete developer's project.`,
+    });
+  }
+});
+
 app.post("/project-skills", async (req, res) => {
   const { skillName, projectId } = req.body;
   try {
