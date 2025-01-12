@@ -762,6 +762,28 @@ app.patch("/business-projects/:id", async (req, res) => {
   }
 });
 
+app.delete("/business-projects/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const sqlQuery = `DELETE FROM business_projects WHERE id = $1 returning *`;
+    const queryResult = await client.query(sqlQuery, [id]);
+
+    if (queryResult.rowCount === 0) {
+      res.status(404).json({ error: "Business project not found." });
+      return;
+    }
+    res.status(200).json(queryResult.rows[0]);
+  } catch (error) {
+    console.error(
+      `Error occurred while deleting business project with ID = ${id} ->`,
+      error
+    );
+    res.status(500).json({
+      error: `Internal server error. Could not delete business project with ID = ${id}.`,
+    });
+  }
+});
+
 app.get("/project-applications", async (_req, res) => {
   try {
     const sqlQuery = "SELECT * FROM project_applications ORDER BY id";
