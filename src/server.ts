@@ -679,10 +679,18 @@ app.get("/business-projects", async (_req, res) => {
 
 app.post("/business-projects", async (req, res) => {
   try {
-    const { projectOwner, title, brief, desiredSkill, status, deadline } =
-      req.body;
-    const sqlQuery = `INSERT INTO business_projects (project_owner, title, brief, desired_skill, deadline, status) values ($1, $2, $3, $4, $5, $6) returning *`;
+    const {
+      assignedTo,
+      projectOwner,
+      title,
+      brief,
+      desiredSkill,
+      status,
+      deadline,
+    } = req.body;
+    const sqlQuery = `INSERT INTO business_projects (assigned_to, project_owner, title, brief, desired_skill, deadline, status) values ($1, $2, $3, $4, $5, $6, $7) returning *`;
     const queryResult = await client.query(sqlQuery, [
+      assignedTo,
       projectOwner,
       title,
       brief,
@@ -701,8 +709,15 @@ app.post("/business-projects", async (req, res) => {
 
 app.patch("/business-projects/:id", async (req, res) => {
   const projectId = req.params.id;
-  const { projectOwner, title, brief, desiredSkill, status, deadline } =
-    req.body;
+  const {
+    assignedTo,
+    projectOwner,
+    title,
+    brief,
+    desiredSkill,
+    status,
+    deadline,
+  } = req.body;
   try {
     const businessResult = await client.query(
       "SELECT * FROM businesses WHERE id = $1",
@@ -717,6 +732,11 @@ app.patch("/business-projects/:id", async (req, res) => {
 
     const setClauses = [];
     const queryValues = [projectId];
+
+    if (assignedTo) {
+      setClauses.push(`assigned_to = $${queryValues.length + 1}`);
+      queryValues.push(assignedTo);
+    }
 
     if (projectOwner) {
       setClauses.push(`project_owner = $${queryValues.length + 1}`);
